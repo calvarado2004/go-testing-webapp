@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/calvarado2004/go-testing/go-webapp/webapp/pkg/data"
+	"github.com/calvarado2004/go-testing-webapp/pkg/data"
 	"net/http"
 	"net/http/httptest"
 	"strings"

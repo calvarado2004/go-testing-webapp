@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/calvarado2004/go-testing/go-webapp/webapp/pkg/data"
+	"github.com/calvarado2004/go-testing-webapp/pkg/data"
 	"html/template"
 	"log"
 	"net/http"

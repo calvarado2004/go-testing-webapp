@@ -2,7 +2,7 @@ package repository
 
 import (
 	"database/sql"
-	"github.com/calvarado2004/go-testing/go-webapp/webapp/pkg/data"
+	"github.com/calvarado2004/go-testing-webapp/pkg/data"
 )
 
 // DatabaseRepo is the interface for the database repository
