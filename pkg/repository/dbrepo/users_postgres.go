@@ -3,7 +3,7 @@ package dbrepo
 import (
 	"context"
 	"database/sql"
-	"github.com/calvarado2004/go-testing/go-webapp/webapp/pkg/data"
+	"github.com/calvarado2004/go-testing-webapp/pkg/data"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"time"

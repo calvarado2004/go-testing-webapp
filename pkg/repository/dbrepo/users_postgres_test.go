@@ -3,8 +3,8 @@ package dbrepo
 import (
 	"database/sql"
 	"fmt"
-	"github.com/calvarado2004/go-testing/go-webapp/webapp/pkg/data"
-	"github.com/calvarado2004/go-testing/pkg/repository"
+	"github.com/calvarado2004/go-testing-webapp/pkg/data"
+	"github.com/calvarado2004/go-testing-webapp/pkg/repository"
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -299,7 +299,7 @@ func TestPostgresDBRepoResetPassword(t *testing.T) {
 func TestPostgresDBRepoInsertUserImage(t *testing.T) {
 
 	testUserImage := data.UserImage{
-		UserID:    1,
+		UserID:    2,
 		FileName:  "test.jpg",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -307,7 +307,7 @@ func TestPostgresDBRepoInsertUserImage(t *testing.T) {
 
 	id, err := testRepo.InsertUserImage(testUserImage)
 	if err != nil {
-		t.Errorf("insertUserImage failed: %d", err)
+		t.Errorf("insertUserImage failed: %v", err)
 	}
 
 	if id != 1 {
