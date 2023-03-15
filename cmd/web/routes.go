@@ -20,9 +20,9 @@ func (app *application) routes() http.Handler {
 	mux.Get("/user/login", app.Login)
 
 	// register middleware for authenticated routes
-	mux.Route("/user/profile", func(muxAuth chi.Router) {
+	mux.Route("/user", func(muxAuth chi.Router) {
 		muxAuth.Use(app.auth)
-		muxAuth.Get("/", app.Profile)
+		muxAuth.Get("/profile", app.Profile)
 		muxAuth.Post("/upload-profile-pic", app.UploadProfilePic)
 	})
 
