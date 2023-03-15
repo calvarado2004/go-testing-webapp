@@ -6,7 +6,16 @@
             <hr class="col-md-12">
                 <h1>User Profile</h1>
                 <hr>
+
+                <!-- decide whether to display profile picture -->
+
                 <hr>
+
+                <form action="/user/upload-profile-pic" method="post" enctype="multipart/form-data">
+                    <label for="formFile" class="form-label">Upload Profile Picture</label>
+                    <input class="form-control" type="file" id="formFile" name="profilePic" accept="image/gif,image/jpeg,image/png">
+                    <input class="btn btn-primary mt-3" type="submit" value="Upload">
+                </form>
             </div>
         </div>
     </div>
