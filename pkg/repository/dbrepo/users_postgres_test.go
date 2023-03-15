@@ -314,4 +314,11 @@ func TestPostgresDBRepoInsertUserImage(t *testing.T) {
 		t.Errorf("expected id to be 1, got %d", id)
 	}
 
+	testUserImage.UserID = 100
+
+	_, err = testRepo.InsertUserImage(testUserImage)
+	if err == nil {
+		t.Errorf("expected error, got nil")
+	}
+
 }
