@@ -123,12 +123,16 @@ func createTables() error {
 	return nil
 }
 
-// Test_pingDB tests the pingDB function
+// Test_pingDB tests the pingDB function testing Connection function
 func Test_pingDB(t *testing.T) {
-	err := testDB.Ping()
+
+	connection := testRepo.Connection()
+
+	err := connection.Ping()
 	if err != nil {
 		t.Error("can't ping database")
 	}
+
 }
 
 // TestPostgresDBRepoInsertUser tests the insertUser function
