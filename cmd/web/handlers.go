@@ -1,11 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"github.com/calvarado2004/go-testing-webapp/pkg/data"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"time"
 )
 
@@ -150,4 +154,80 @@ func (app *application) authenticate(r *http.Request, user *data.User, password 
 	app.Session.Put(r.Context(), "user", user)
 
 	return true
+}
+
+// UploadProfilePic is the handler for the upload profile pic page
+func (app *application) UploadProfilePic(w http.ResponseWriter, r *http.Request) {
+
+	// call a function that extracts a file from an upload
+
+	// get the user from the session
+
+	// create a var of file data.UserImage
+
+	// insert the user image into user_images
+
+	// update the user's profile pic session variable "user"
+
+	// redirect to profile page
+
+}
+
+// UploadedFile is a struct that holds the original file name and the file size
+type UploadedFile struct {
+	OriginalFileName string
+	FileSize         int64
+}
+
+// UploadFiles is the handler for the upload files page
+func (app *application) UploadFiles(r *http.Request, uploadDir string) ([]*UploadedFile, error) {
+
+	var uploadedFiles []*UploadedFile
+
+	err := r.ParseMultipartForm(int64(1024 * 1024 * 100))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing multipart form, bigger than 100Mib: %v", err)
+	}
+
+	for _, fileHeaders := range r.MultipartForm.File {
+		for _, hdr := range fileHeaders {
+			uploadedFiles, err = func(uploadedFiles []*UploadedFile) ([]*UploadedFile, error) {
+
+				var uploadedFile UploadedFile
+
+				infile, err := hdr.Open()
+				if err != nil {
+					return nil, fmt.Errorf("error opening file: %v", err)
+				}
+				defer infile.Close()
+
+				uploadedFile.OriginalFileName = hdr.Filename
+
+				var outfile *os.File
+
+				defer outfile.Close()
+
+				if outfile, err = os.Create(filepath.Join(uploadDir, uploadedFile.OriginalFileName)); err != nil {
+					return nil, fmt.Errorf("error creating file: %v", err)
+				} else {
+					fileSize, err := io.Copy(outfile, infile)
+					if err != nil {
+						return nil, fmt.Errorf("error copying file: %v", err)
+					}
+
+					uploadedFile.FileSize = fileSize
+				}
+
+				uploadedFiles = append(uploadedFiles, &uploadedFile)
+
+				return uploadedFiles, nil
+
+			}(uploadedFiles)
+			if err != nil {
+				return uploadedFiles, err
+			}
+		}
+	}
+
+	return uploadedFiles, nil
 }

@@ -23,6 +23,7 @@ func (app *application) routes() http.Handler {
 	mux.Route("/user/profile", func(muxAuth chi.Router) {
 		muxAuth.Use(app.auth)
 		muxAuth.Get("/", app.Profile)
+		muxAuth.Post("/upload-profile-pic", app.UploadProfilePic)
 	})
 
 	// static files
