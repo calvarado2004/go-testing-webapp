@@ -22,6 +22,8 @@ RUN mkdir /app
 
 WORKDIR /app
 
+RUN mkdir -p /app/static/img
+
 COPY --from=builder /app /app
 
 CMD [ "/app/goWebAppTesting"]

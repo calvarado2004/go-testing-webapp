@@ -83,6 +83,7 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, t string,
 
 	td.Flash = app.Session.PopString(r.Context(), "flash")
 
+	// add the current user to the template data, if any
 	if app.Session.Exists(r.Context(), "user") {
 		td.User = app.Session.Get(r.Context(), "user").(data.User)
 	}
