@@ -14,6 +14,7 @@ import (
 )
 
 var pathToTemplates = "./templates/"
+var uploadPath = "./static/img/"
 
 // Home is the handler for the home page
 func (app *application) Home(w http.ResponseWriter, r *http.Request) {
@@ -165,7 +166,7 @@ func (app *application) authenticate(r *http.Request, user *data.User, password 
 func (app *application) UploadProfilePic(w http.ResponseWriter, r *http.Request) {
 
 	// call a function that extracts a file from an upload
-	files, err := app.UploadFiles(r, "./static/img")
+	files, err := app.UploadFiles(r, uploadPath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		app.Session.Put(r.Context(), "error", "error uploading file")

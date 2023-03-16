@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
+	"github.com/calvarado2004/go-testing-webapp/pkg/data"
 	"image"
 	"image/png"
 	"io"
@@ -334,6 +336,7 @@ func Test_app_UploadFiles(t *testing.T) {
 
 }
 
+// simulatePNGUpload simulates uploading a png file
 func simulatePNGUpload(fileToUpload string, writer *multipart.Writer, t *testing.T, wg *sync.WaitGroup) {
 
 	defer writer.Close()
@@ -365,4 +368,60 @@ func simulatePNGUpload(fileToUpload string, writer *multipart.Writer, t *testing
 		t.Error("error encoding png")
 	}
 
+}
+
+// Test_app_UploadProfilePic tests the upload profile pic handler
+func Test_app_UploadProfilePic(t *testing.T) {
+
+	uploadPath := "./testdata/uploads"
+	filePath := "./testdata/img.png"
+
+	// specify a field name for the form
+	fieldName := "file"
+
+	// create a bytes buffer to act as the request body
+
+	body := new(bytes.Buffer)
+
+	// create a multipart writer and write a multipart form to the buffer
+	mw := multipart.NewWriter(body)
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		t.Error(err)
+	}
+
+	defer file.Close()
+
+	// create a form file
+	fw, err := mw.CreateFormFile(fieldName, filePath)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// copy the file data to the form file
+	_, err = io.Copy(fw, file)
+	if err != nil {
+		t.Error(err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/user/upload-profile-pic", body)
+	req = addContextAndSessionToRequest(req, app)
+	app.Session.Put(req.Context(), "user", data.User{ID: 1})
+	req.Header.Add("Content-Type", mw.FormDataContentType())
+
+	rw := httptest.NewRecorder()
+
+	handler := http.HandlerFunc(app.UploadProfilePic)
+
+	handler.ServeHTTP(rw, req)
+
+	if rw.Result().StatusCode != http.StatusSeeOther {
+		t.Errorf("expected %d; got %d", http.StatusSeeOther, rw.Result().StatusCode)
+	}
+
+	// clean up the files
+	_ = os.Remove(uploadPath + "./testdata/uploads/img.png")
+
+	mw.Close()
 }
