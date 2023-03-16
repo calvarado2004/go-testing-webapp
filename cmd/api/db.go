@@ -3,6 +3,9 @@ package main
 // openDB returns a sql.DB connection pool for the named data source.
 import (
 	"database/sql"
+	_ "github.com/jackc/pgconn"
+	_ "github.com/jackc/pgx/v4"
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"log"
 )
 

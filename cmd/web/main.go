@@ -19,7 +19,7 @@ type application struct {
 	Session *scs.SessionManager
 }
 
-//DSN="host=localhost port=5432 user=postgres password=postgres dbname=users sslmode=disable timezone=UTC connect_timeout=5" go run ./cmd/web
+//DSN="host=localhost port=5432 user=postgres password=postgres dbname=users sslmode=disable timezone=UTC connect_timeout=5"; JWT_SECRET="verysecret" go run ./cmd/web
 
 func main() {
 
