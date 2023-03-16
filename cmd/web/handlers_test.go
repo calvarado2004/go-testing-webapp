@@ -334,6 +334,8 @@ func Test_app_UploadFiles(t *testing.T) {
 	// clean up the files
 	_ = os.Remove("./testdata/uploads/" + uploadedFiles[0].OriginalFileName)
 
+	wg.Wait()
+
 }
 
 // simulatePNGUpload simulates uploading a png file
@@ -416,8 +418,8 @@ func Test_app_UploadProfilePic(t *testing.T) {
 
 	handler.ServeHTTP(rw, req)
 
-	if rw.Result().StatusCode != http.StatusSeeOther {
-		t.Errorf("expected %d; got %d", http.StatusSeeOther, rw.Result().StatusCode)
+	if rw.Code != http.StatusSeeOther {
+		t.Errorf("expected %d; got %d", http.StatusSeeOther, rw.Code)
 	}
 
 	// clean up the files
