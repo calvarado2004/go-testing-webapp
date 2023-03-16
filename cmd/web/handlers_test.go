@@ -3,11 +3,16 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"image"
+	"image/png"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -289,6 +294,75 @@ func Test_app_Login(t *testing.T) {
 			t.Errorf("%s: expected %s; got %s", tt.name, tt.expectedLocation, rw.Header().Get("Location"))
 		}
 
+	}
+
+}
+
+// Test_app_UploadFiles tests the upload files handler
+func Test_app_UploadFiles(t *testing.T) {
+
+	// set up pipes
+	pr, pw := io.Pipe()
+
+	// create a new writer of type *io.Writer
+	writer := multipart.NewWriter(pw)
+
+	// create a wait group and add 1 to it
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	// simulate uploading a file using a goroutine and our writer
+	go simulatePNGUpload("./testdata/img.png", writer, t, &wg)
+
+	// read from the file which receives the data from the writer
+	request := httptest.NewRequest("POST", "/", pr)
+	request.Header.Add("Content-Type", writer.FormDataContentType())
+
+	// call app.UploadFiles with the request and response recorder
+	uploadedFiles, err := app.UploadFiles(request, "./testdata/uploads/")
+	if err != nil {
+		t.Error(err)
+	}
+
+	// perform the tests
+	if _, err := os.Stat("./testdata/uploads/" + uploadedFiles[0].OriginalFileName); os.IsNotExist(err) {
+		t.Error("file was not uploaded, file does not exist")
+	}
+
+	// clean up the files
+	_ = os.Remove("./testdata/uploads/" + uploadedFiles[0].OriginalFileName)
+
+}
+
+func simulatePNGUpload(fileToUpload string, writer *multipart.Writer, t *testing.T, wg *sync.WaitGroup) {
+
+	defer writer.Close()
+	defer wg.Done()
+
+	// create a new form file
+	part, err := writer.CreateFormFile("file", fileToUpload)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// open the file
+	file, err := os.Open(fileToUpload)
+	if err != nil {
+		t.Error(err)
+	}
+
+	defer file.Close()
+
+	// decode the image
+	img, _, err := image.Decode(file)
+	if err != nil {
+		t.Error("error decoding image")
+	}
+
+	// write the png to io.Writer
+	err = png.Encode(part, img)
+	if err != nil {
+		t.Error("error encoding png")
 	}
 
 }
