@@ -374,56 +374,48 @@ func simulatePNGUpload(fileToUpload string, writer *multipart.Writer, t *testing
 
 // Test_app_UploadProfilePic tests the upload profile pic handler
 func Test_app_UploadProfilePic(t *testing.T) {
-
-	uploadPath := "./testdata/uploads"
+	uploadPath = "./testdata/uploads"
 	filePath := "./testdata/img.png"
 
 	// specify a field name for the form
 	fieldName := "file"
 
-	// create a bytes buffer to act as the request body
-
+	// create a bytes.Buffer to act as the request body
 	body := new(bytes.Buffer)
 
-	// create a multipart writer and write a multipart form to the buffer
+	// create a new writer
 	mw := multipart.NewWriter(body)
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
-	defer file.Close()
-
-	// create a form file
-	fw, err := mw.CreateFormFile(fieldName, filePath)
+	w, err := mw.CreateFormFile(fieldName, filePath)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
-	// copy the file data to the form file
-	_, err = io.Copy(fw, file)
-	if err != nil {
-		t.Error(err)
+	if _, err := io.Copy(w, file); err != nil {
+		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/user/upload-profile-pic", body)
+	mw.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/upload", body)
 	req = addContextAndSessionToRequest(req, app)
 	app.Session.Put(req.Context(), "user", data.User{ID: 1})
 	req.Header.Add("Content-Type", mw.FormDataContentType())
 
-	rw := httptest.NewRecorder()
+	rr := httptest.NewRecorder()
 
 	handler := http.HandlerFunc(app.UploadProfilePic)
 
-	handler.ServeHTTP(rw, req)
+	handler.ServeHTTP(rr, req)
 
-	if rw.Code != http.StatusSeeOther {
-		t.Errorf("expected %d; got %d", http.StatusSeeOther, rw.Code)
+	if rr.Code != http.StatusSeeOther {
+		t.Errorf("wrong status code")
 	}
 
-	// clean up the files
-	_ = os.Remove(uploadPath + "./testdata/uploads/img.png")
-
-	mw.Close()
+	_ = os.Remove("./testdata/uploads/img.png")
 }
