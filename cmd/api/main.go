@@ -11,6 +11,10 @@ import (
 	"os"
 )
 
+//export DSN="host=localhost port=5432 user=postgres password=postgres dbname=users sslmode=disable timezone=UTC connect_timeout=5"
+//export JWT_SECRET="verysecret"
+//go run ./cmd/web
+
 const port = 8090
 
 type application struct {

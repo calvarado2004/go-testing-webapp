@@ -14,7 +14,12 @@ RUN go mod tidy
 
 RUN CGO_ENABLED=0 go build -o goWebAppTesting ./cmd/web
 
+RUN CGO_ENABLED=0 go build -o goAPITesting ./cmd/api
+
+
 RUN chmod +x /app/goWebAppTesting
+
+RUN chmod +x /app/goAPITesting
 
 FROM alpine:latest
 
@@ -27,3 +32,4 @@ RUN mkdir -p /app/static/img
 COPY --from=builder /app /app
 
 CMD [ "/app/goWebAppTesting"]
+
