@@ -64,6 +64,11 @@ func (app *application) getTokenFromHeaderAndVerify(w http.ResponseWriter, r *ht
 		return []byte(app.JWTSecret), nil
 	})
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "token is expired") {
+			app.errorJSON(w, errors.New("token is expired"))
+			return "", nil, errors.New("token is expired")
+		}
+
 		app.errorJSON(w, err)
 		return "", nil, err
 	}
