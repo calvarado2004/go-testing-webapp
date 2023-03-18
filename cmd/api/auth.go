@@ -73,6 +73,13 @@ func (app *application) getTokenFromHeaderAndVerify(w http.ResponseWriter, r *ht
 		return "", nil, err
 	}
 
+	// make sure the token was issued by us
+	if claims.Issuer != app.Domain {
+		app.errorJSON(w, errors.New("invalid token, wrong issuer"))
+		return "", nil, errors.New("invalid token, wrong issuer")
+	}
+
+	// valid token
 	return token, claims, nil
 
 }
