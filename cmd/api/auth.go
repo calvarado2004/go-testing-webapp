@@ -48,4 +48,20 @@ func (app *application) getTokenFromHeaderAndVerify(w http.ResponseWriter, r *ht
 		return "", nil, errors.New("invalid authorization header")
 	}
 
+	token := headersParts[1]
+
+	// verify the token
+	claims := &Claims{}
+
+	// parse the token
+	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(app.JWTSecret), nil
+	})
+	if err != nil {
+		app.errorJSON(w, err)
+		return "", nil, err
+	}
+	
+	return token, claims, nil
+
 }
