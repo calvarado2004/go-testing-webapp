@@ -5,6 +5,16 @@ import "net/http"
 // authenticate handles the authentication process for existing users.
 func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
 
+	// read a json payload
+
+	// look up the user by email address
+
+	// check the password matches
+
+	// create a new token for the user
+
+	// write the token to the response
+
 }
 
 // refresh handles the refresh process for existing users.
