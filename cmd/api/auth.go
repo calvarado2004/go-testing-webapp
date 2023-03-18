@@ -55,13 +55,18 @@ func (app *application) getTokenFromHeaderAndVerify(w http.ResponseWriter, r *ht
 
 	// parse the token
 	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+		// validate signing method
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("invalid signing method")
+		}
+		
 		return []byte(app.JWTSecret), nil
 	})
 	if err != nil {
 		app.errorJSON(w, err)
 		return "", nil, err
 	}
-	
+
 	return token, claims, nil
 
 }
