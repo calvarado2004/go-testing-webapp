@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"github.com/golang-jwt/jwt/v4"
 	"net/http"
 	"strings"
@@ -57,9 +58,9 @@ func (app *application) getTokenFromHeaderAndVerify(w http.ResponseWriter, r *ht
 	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 		// validate signing method
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("invalid signing method")
+			return nil, errors.New(fmt.Sprintf("invalid signing method %v", token.Header["alg"]))
 		}
-		
+
 		return []byte(app.JWTSecret), nil
 	})
 	if err != nil {
