@@ -20,7 +20,7 @@ type application struct {
 }
 
 //export DSN="host=localhost port=5432 user=postgres password=postgres dbname=users sslmode=disable timezone=UTC connect_timeout=5"
-//export JWT_SECRET="verysecret"
+//export JWT_SECRET="2dce505d96a53c5768052ee90f3df2055657518dad489160df9913f66042e160"
 //go run ./cmd/web
 
 func main() {
