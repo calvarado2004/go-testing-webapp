@@ -16,6 +16,9 @@ func Test_app_authenticate(t *testing.T) {
 	}{
 		{"valid", `{"email":"admin@example.com","password":"secret"}`, http.StatusOK},
 		{"invalidJSON", `This is not json`, http.StatusUnauthorized},
+		{"emptyJSON", `{}`, http.StatusUnauthorized},
+		{"emptyEmail", `{"email":"","password":"secret"}`, http.StatusUnauthorized},
+		{"emptyPassword", `{"email":"admin@example.com","password":""}`, http.StatusUnauthorized},
 	}
 
 	for _, tt := range theTests {
