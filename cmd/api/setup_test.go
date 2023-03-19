@@ -8,7 +8,7 @@ import (
 
 var app application
 
-var expiredToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbiI6dHJ1ZSwiYXVkIjoiZXhhbXBsZS5jb20iLCJleHAiOjE2Nzk1MTE3MDMsImlzcyI6ImV4YW1wbGUuY29tIiwibmFtZSI6IkpvaG4gRG9lIiwic3ViIjoiMSJ9.tWMe9wcrtmT9E2xVvt-xUc3pFDDtJywAGvn3VkDQexE"
+var expiredToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbiI6dHJ1ZSwiYXVkIjoiZXhhbXBsZS5jb20iLCJleHAiOjE2Nzg4OTQzMTYsImlzcyI6ImV4YW1wbGUuY29tIiwibmFtZSI6IkpvaG4gRG9lIiwic3ViIjoiMSJ9.ytNHyK5mq9cB1mwP9hccHHx77Qon5iHmECTUIVfq620"
 
 func TestMain(m *testing.M) {
 

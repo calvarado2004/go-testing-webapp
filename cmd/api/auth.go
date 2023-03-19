@@ -99,8 +99,8 @@ func (app *application) generateTokenPair(user *data.User) (TokenPairs, error) {
 
 	// set the claims
 	claims := token.Claims.(jwt.MapClaims)
-	claims["name"] = user.FirstName + " " + user.LastName
-	claims["sub"] = user.ID
+	claims["name"] = fmt.Sprintf("%s %s", user.FirstName, user.LastName)
+	claims["sub"] = fmt.Sprint(user.ID)
 	claims["aud"] = app.Domain
 	claims["iss"] = app.Domain
 	if user.IsAdmin == 1 {
