@@ -8,6 +8,7 @@ import (
 	"testing"
 )
 
+// Test_app_authenticate tests the authenticate handler function.
 func Test_app_authenticate(t *testing.T) {
 	var theTests = []struct {
 		name               string
@@ -19,6 +20,7 @@ func Test_app_authenticate(t *testing.T) {
 		{"emptyJSON", `{}`, http.StatusUnauthorized},
 		{"emptyEmail", `{"email":"","password":"secret"}`, http.StatusUnauthorized},
 		{"emptyPassword", `{"email":"admin@example.com","password":""}`, http.StatusUnauthorized},
+		{"invalidUser", `{"email":"admin@otherdomain.com","password":"secret"}`, http.StatusUnauthorized},
 	}
 
 	for _, tt := range theTests {
