@@ -13,7 +13,7 @@ import (
 
 //export DSN="host=localhost port=5432 user=postgres password=postgres dbname=users sslmode=disable timezone=UTC connect_timeout=5"
 //export JWT_SECRET="verysecret"
-//go run ./cmd/web
+//go run ./cmd/api
 
 const port = 8090
 
