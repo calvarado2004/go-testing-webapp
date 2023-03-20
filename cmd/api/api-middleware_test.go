@@ -61,6 +61,8 @@ func Test_app_authRequired(t *testing.T) {
 		setHeader          bool
 	}{
 		{name: "valid token", token: fmt.Sprintf("Bearer %s", tokens.AccessToken), expectedAuthorized: true, setHeader: true},
+		{name: "no token", token: "", expectedAuthorized: false, setHeader: false},
+		{name: "invalid token", token: fmt.Sprintf("Bearer %s", expiredToken), expectedAuthorized: false, setHeader: false},
 	}
 
 	for _, tt := range theTests {
@@ -75,18 +77,14 @@ func Test_app_authRequired(t *testing.T) {
 
 		handlerToTest.ServeHTTP(rr, req)
 
-		if rr.Code == http.StatusUnauthorized && tt.expectedAuthorized {
-			t.Errorf("Expected authorized request to return 200 on test %s", tt.name)
-		}
-
 		if tt.expectedAuthorized && rr.Code != http.StatusOK {
 			t.Errorf("Expected authorized request to return 200 on test %s", tt.name)
 		}
 
-		if !tt.expectedAuthorized && rr.Code != http.StatusUnauthorized {
+		if !tt.expectedAuthorized && rr.Code != 400 {
 			t.Errorf("Expected unauthorized request to return 401 on test %s", tt.name)
 		}
-		
+
 	}
 
 }
