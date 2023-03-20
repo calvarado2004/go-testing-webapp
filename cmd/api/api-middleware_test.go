@@ -50,6 +50,7 @@ func Test_app_authRequired(t *testing.T) {
 		ID:        1,
 		FirstName: "Test",
 		LastName:  "User",
+		Email:     "admin@example.com",
 	}
 
 	tokens, _ := app.generateTokenPair(&testUser)
@@ -61,12 +62,12 @@ func Test_app_authRequired(t *testing.T) {
 		setHeader          bool
 	}{
 		{name: "valid token", token: fmt.Sprintf("Bearer %s", tokens.AccessToken), expectedAuthorized: true, setHeader: true},
-		{name: "no token", token: "", expectedAuthorized: false, setHeader: false},
-		{name: "invalid token", token: fmt.Sprintf("Bearer %s", expiredToken), expectedAuthorized: false, setHeader: false},
+		{name: "no token", token: fmt.Sprintf("Bearer "), expectedAuthorized: false, setHeader: false},
+		{name: "invalid token", token: fmt.Sprintf("Bearer %s", expiredToken), expectedAuthorized: false, setHeader: true},
 	}
 
 	for _, tt := range theTests {
-		req, _ := http.NewRequest("GET", "http://testing", nil)
+		req, _ := http.NewRequest("GET", "/", nil)
 		if tt.setHeader {
 			req.Header.Set("Authorization", tt.token)
 		}
@@ -82,7 +83,7 @@ func Test_app_authRequired(t *testing.T) {
 		}
 
 		if !tt.expectedAuthorized && rr.Code != 400 {
-			t.Errorf("Expected unauthorized request to return 401 on test %s", tt.name)
+			t.Errorf("Expected unauthorized request to return 401 on test %s, returned %d", tt.name, rr.Code)
 		}
 
 	}
