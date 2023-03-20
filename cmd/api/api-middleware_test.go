@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"github.com/calvarado2004/go-testing-webapp/pkg/data"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -37,4 +39,54 @@ func Test_app_enableCORS(t *testing.T) {
 		}
 
 	}
+}
+
+// Test_app_authRequired tests the authRequired middleware
+func Test_app_authRequired(t *testing.T) {
+
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+
+	testUser := data.User{
+		ID:        1,
+		FirstName: "Test",
+		LastName:  "User",
+	}
+
+	tokens, _ := app.generateTokenPair(&testUser)
+
+	var theTests = []struct {
+		name               string
+		token              string
+		expectedAuthorized bool
+		setHeader          bool
+	}{
+		{name: "valid token", token: fmt.Sprintf("Bearer %s", tokens.AccessToken), expectedAuthorized: true, setHeader: true},
+	}
+
+	for _, tt := range theTests {
+		req, _ := http.NewRequest("GET", "http://testing", nil)
+		if tt.setHeader {
+			req.Header.Set("Authorization", tt.token)
+		}
+
+		rr := httptest.NewRecorder()
+
+		handlerToTest := app.authRequired(nextHandler)
+
+		handlerToTest.ServeHTTP(rr, req)
+
+		if rr.Code == http.StatusUnauthorized && tt.expectedAuthorized {
+			t.Errorf("Expected authorized request to return 200 on test %s", tt.name)
+		}
+
+		if tt.expectedAuthorized && rr.Code != http.StatusOK {
+			t.Errorf("Expected authorized request to return 200 on test %s", tt.name)
+		}
+
+		if !tt.expectedAuthorized && rr.Code != http.StatusUnauthorized {
+			t.Errorf("Expected unauthorized request to return 401 on test %s", tt.name)
+		}
+		
+	}
+
 }
