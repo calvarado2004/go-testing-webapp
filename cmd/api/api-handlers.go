@@ -10,7 +10,7 @@ import (
 )
 
 type Credentials struct {
-	Email    string `json:"email"`
+	Username string `json:"email"`
 	Password string `json:"password"`
 }
 
@@ -26,7 +26,7 @@ func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// look up the user by email address
-	user, err := app.DB.GetUserByEmail(creds.Email)
+	user, err := app.DB.GetUserByEmail(creds.Username)
 	if err != nil {
 		app.errorJSON(w, errors.New("invalid credentials"), http.StatusUnauthorized)
 		return
@@ -53,6 +53,8 @@ func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
+
 }
 
 // refresh handles the refresh process for existing users.
@@ -69,12 +71,12 @@ func (app *application) refresh(w http.ResponseWriter, r *http.Request) {
 	// look up the user by refresh token using claims
 	claims := &Claims{}
 
-	_, err = jwt.ParseWithClaims(refreshToken, claims, func(token *jwt.Token) (any, error) {
+	_, err = jwt.ParseWithClaims(refreshToken, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(app.JWTSecret), nil
 	})
 
 	if err != nil {
-		app.errorJSON(w, err, http.StatusBadRequest)
+		app.errorJSON(w, err, http.StatusUnauthorized)
 		return
 	}
 
@@ -84,15 +86,11 @@ func (app *application) refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get the user id from the claims
-	userID, err := strconv.Atoi(claims.Subject)
-	if err != nil {
-		app.errorJSON(w, err, http.StatusBadRequest)
-		return
-	}
+	userID, _ := strconv.Atoi(claims.Subject)
 
 	user, err := app.DB.GetUser(userID)
 	if err != nil {
-		app.errorJSON(w, errors.New("unknown user"), http.StatusBadRequest)
+		app.errorJSON(w, errors.New("unknown user on db"), http.StatusNotFound)
 		return
 	}
 
@@ -123,6 +121,7 @@ func (app *application) refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
 }
 
 // allUsers handles the GET /v1/users request.

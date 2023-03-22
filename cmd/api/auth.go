@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-const jwtTokenExpiry = time.Minute * 15
-const refreshTokenExpiry = time.Hour * 24
+var jwtTokenExpiry = time.Minute * 15
+var refreshTokenExpiry = time.Hour * 24
 
 // TokenPairs is a struct that holds the access and refresh tokens
 type TokenPairs struct {
@@ -123,7 +123,7 @@ func (app *application) generateTokenPair(user *data.User) (TokenPairs, error) {
 	// set the claims
 	refreshClaims := refreshToken.Claims.(jwt.MapClaims)
 
-	refreshClaims["sub"] = user.ID
+	refreshClaims["sub"] = fmt.Sprint(user.ID)
 	refreshClaims["exp"] = time.Now().Add(refreshTokenExpiry).Unix()
 
 	signedRefreshToken, err := refreshToken.SignedString([]byte(app.JWTSecret))
