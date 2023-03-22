@@ -58,6 +58,7 @@ func Test_app_refresh(t *testing.T) {
 		refreshTime        bool
 	}{
 		{"valid", "", http.StatusOK, true},
+		{"valid but not ready", "", http.StatusTooEarly, false},
 		{"invalid", "invalid", http.StatusUnauthorized, false},
 		{"expired", expiredToken, http.StatusUnauthorized, false},
 	}
