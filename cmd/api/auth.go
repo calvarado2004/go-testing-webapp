@@ -100,6 +100,7 @@ func (app *application) generateTokenPair(user *data.User) (TokenPairs, error) {
 	// set the claims
 	claims := token.Claims.(jwt.MapClaims)
 	claims["name"] = fmt.Sprintf("%s %s", user.FirstName, user.LastName)
+	// sub must be a string even though it is an int in the db
 	claims["sub"] = fmt.Sprint(user.ID)
 	claims["aud"] = app.Domain
 	claims["iss"] = app.Domain
