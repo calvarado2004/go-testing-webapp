@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func (app *application) routes() http.Handler {
+func (app *application) routesAPI() http.Handler {
 	mux := chi.NewRouter()
 
 	// register middleware

@@ -48,7 +48,7 @@ func main() {
 
 	log.Printf("Starting server on port %d", port)
 
-	err = http.ListenAndServe(fmt.Sprintf(":%d", port), app.routes())
+	err = http.ListenAndServe(fmt.Sprintf(":%d", port), app.routesAPI())
 	if err != nil {
 		log.Fatal(err)
 	}
