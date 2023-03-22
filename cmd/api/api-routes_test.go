@@ -16,7 +16,7 @@ func Test_app_routes(t *testing.T) {
 	}{
 		{"/v1/test", "GET"},
 		{"/v1/auth", "POST"},
-		{"/v1/refresh", "POST"},
+		{"/v1/refresh-token", "POST"},
 		{"/v1/users/", "GET"},
 		{"/v1/users/{id}", "GET"},
 		{"/v1/users/{id}", "PATCH"},

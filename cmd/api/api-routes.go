@@ -17,7 +17,7 @@ func (app *application) routesAPI() http.Handler {
 
 	// authentication routes - auth handler, refresh token handler
 	mux.Post("/v1/auth", app.authenticate)
-	mux.Post("/v1/refresh", app.refresh)
+	mux.Post("/v1/refresh-token", app.refresh)
 
 	// test handler - unprotected route for JSON response
 	mux.Get("/v1/test", func(w http.ResponseWriter, r *http.Request) {
