@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"github.com/calvarado2004/go-testing-webapp/pkg/data"
+	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -110,4 +112,43 @@ func Test_app_refresh(t *testing.T) {
 
 	}
 
+}
+
+// Test_app_userHandlers tests the user handlers.
+func Test_app_userHandlers(t *testing.T) {
+	var theTests = []struct {
+		name           string
+		method         string
+		json           string
+		paramID        string
+		handler        http.HandlerFunc
+		expectedStatus int
+	}{
+		{"allUsers", "GET", "", "", app.allUsers, http.StatusOK},
+		{"deleteUser", "DELETE", "", "1", app.deleteUser, http.StatusNoContent},
+		{"getUser valid", "GET", "", "1", app.getUser, http.StatusOK},
+	}
+
+	for _, tt := range theTests {
+		var req *http.Request
+		if tt.json != "" {
+			req, _ = http.NewRequest(tt.method, "/v1/users", strings.NewReader(tt.json))
+		} else {
+			req, _ = http.NewRequest(tt.method, "/v1/users", nil)
+		}
+		if tt.paramID != "" {
+			chiCtx := chi.NewRouteContext()
+
+			chiCtx.URLParams.Add("userID", tt.paramID)
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+			rr := httptest.NewRecorder()
+
+			tt.handler.ServeHTTP(rr, req)
+
+			if tt.expectedStatus != rr.Code {
+				t.Errorf("handler returned wrong status code: got %v want %v, test %s", rr.Code, tt.expectedStatus, tt.name)
+			}
+
+		}
+	}
 }
