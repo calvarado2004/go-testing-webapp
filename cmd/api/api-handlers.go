@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"github.com/calvarado2004/go-testing-webapp/pkg/data"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
@@ -168,14 +169,65 @@ func (app *application) getUser(w http.ResponseWriter, r *http.Request) {
 // updateUser handles the PUT /v1/users/{id} request.
 func (app *application) updateUser(w http.ResponseWriter, r *http.Request) {
 
+	var user data.User
+
+	err := app.readJSON(w, r, &user)
+	if err != nil {
+		app.errorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	err = app.DB.UpdateUser(user)
+	if err != nil {
+		app.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+
 }
 
 // deleteUser handles the DELETE /v1/users/{id} request.
 func (app *application) deleteUser(w http.ResponseWriter, r *http.Request) {
 
+	userID, err := strconv.Atoi(chi.URLParam(r, "userID"))
+	if err != nil {
+		app.errorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	err = app.DB.DeleteUser(userID)
+	if err != nil {
+		app.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // insertUser handles the POST /v1/users request.
 func (app *application) insertUser(w http.ResponseWriter, r *http.Request) {
+
+	var user data.User
+
+	err := app.readJSON(w, r, &user)
+	if err != nil {
+		app.errorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	id, err := app.DB.InsertUser(user)
+	if err != nil {
+		app.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	user.ID = id
+
+	err = app.writeJSON(w, http.StatusCreated, user, "user")
+	if err != nil {
+		app.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
 
 }
