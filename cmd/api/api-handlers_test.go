@@ -66,7 +66,7 @@ func Test_app_refresh(t *testing.T) {
 	}
 
 	testUser := data.User{
-		ID:        2,
+		ID:        1,
 		FirstName: "Test",
 		LastName:  "User",
 		Email:     "admin@example.com",
