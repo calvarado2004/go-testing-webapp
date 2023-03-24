@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
@@ -127,10 +128,40 @@ func (app *application) refresh(w http.ResponseWriter, r *http.Request) {
 // allUsers handles the GET /v1/users request.
 func (app *application) allUsers(w http.ResponseWriter, r *http.Request) {
 
+	users, err := app.DB.AllUsers()
+	if err != nil {
+		app.errorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, users, "users")
+	if err != nil {
+		app.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
 }
 
 // getUser handles the GET /v1/users/{id} request.
 func (app *application) getUser(w http.ResponseWriter, r *http.Request) {
+
+	userID, err := strconv.Atoi(chi.URLParam(r, "userID"))
+	if err != nil {
+		app.errorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	user, err := app.DB.GetUser(userID)
+	if err != nil {
+		app.errorJSON(w, err, http.StatusNotFound)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, user, "user")
+	if err != nil {
+		app.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
 
 }
 
