@@ -1,12 +1,12 @@
 package main
 
-// openDB returns a sql.DB connection pool for the named data source.
 import (
 	"database/sql"
+	"log"
+
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"log"
 )
 
 func openDB(dsn string) (*sql.DB, error) {
@@ -15,16 +15,15 @@ func openDB(dsn string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	if err = db.Ping(); err != nil {
+	err = db.Ping()
+	if err != nil {
 		return nil, err
 	}
 
 	return db, nil
 }
 
-// connectToDB returns a sql.DB connection pool for the named data source.
 func (app *application) connectToDB() (*sql.DB, error) {
-
 	connection, err := openDB(app.DSN)
 	if err != nil {
 		return nil, err
@@ -33,5 +32,4 @@ func (app *application) connectToDB() (*sql.DB, error) {
 	log.Println("Connected to Postgres!")
 
 	return connection, nil
-
 }

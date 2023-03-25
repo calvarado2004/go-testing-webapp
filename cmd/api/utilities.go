@@ -7,7 +7,6 @@ import (
 	"net/http"
 )
 
-// writeJSON writes the given data as JSON to the response stream.
 func (app *application) writeJSON(w http.ResponseWriter, status int, data interface{}, wrap ...string) error {
 	// out will hold the final version of the json to send to the client
 	var out []byte
@@ -43,7 +42,6 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data interf
 	return nil
 }
 
-// errorJSON writes the given error message and status code as JSON to the response stream.
 func (app *application) errorJSON(w http.ResponseWriter, err error, status ...int) {
 	statusCode := http.StatusBadRequest
 	if len(status) > 0 {
@@ -61,7 +59,6 @@ func (app *application) errorJSON(w http.ResponseWriter, err error, status ...in
 	_ = app.writeJSON(w, statusCode, theError, "error")
 }
 
-// readJSON reads and decodes JSON data from the request body into the target data structure.
 func (app *application) readJSON(w http.ResponseWriter, r *http.Request, data interface{}) error {
 	maxBytes := 1024 * 1024 // one megabyte
 	r.Body = http.MaxBytesReader(w, r.Body, int64(maxBytes))

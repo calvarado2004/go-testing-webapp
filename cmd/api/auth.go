@@ -4,103 +4,89 @@ import (
 	"errors"
 	"fmt"
 	"github.com/calvarado2004/go-testing-webapp/pkg/data"
-	"github.com/golang-jwt/jwt/v4"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/golang-jwt/jwt/v4"
 )
 
 var jwtTokenExpiry = time.Minute * 15
 var refreshTokenExpiry = time.Hour * 24
 
-// TokenPairs is a struct that holds the access and refresh tokens
 type TokenPairs struct {
-	AccessToken  string `json:"access_token"`
+	Token        string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 }
 
-// Claims is a custom claims type
 type Claims struct {
-	UserName string `json:"username"`
+	UserName string `json:"name"`
 	jwt.RegisteredClaims
 }
 
-// getTokenFromHeaderAndVerify verifies the token and returns the claims
 func (app *application) getTokenFromHeaderAndVerify(w http.ResponseWriter, r *http.Request) (string, *Claims, error) {
-
-	// Bearer token is in the format:
+	// we expect our authorization header to look like this:
 	// Bearer <token>
-
 	// add a header
 	w.Header().Add("Vary", "Authorization")
 
 	// get the authorization header
 	authHeader := r.Header.Get("Authorization")
 
-	// check if the header is empty
+	// sanity check
 	if authHeader == "" {
-		app.errorJSON(w, errors.New("no authorization header"))
-		return "", nil, errors.New("no authorization header")
+		return "", nil, errors.New("no auth header")
 	}
 
 	// split the header on spaces
-	headersParts := strings.Split(authHeader, " ")
-	if len(headersParts) != 2 {
-		app.errorJSON(w, errors.New("invalid authorization header"))
-		return "", nil, errors.New("invalid authorization header")
+	headerParts := strings.Split(authHeader, " ")
+	if len(headerParts) != 2 {
+		return "", nil, errors.New("invalid auth header")
 	}
 
-	// check if the header is a bearer token
-	if headersParts[0] != "Bearer" {
-		app.errorJSON(w, errors.New("invalid authorization header"))
-		return "", nil, errors.New("invalid authorization header")
+	// check to see if we have the word "Bearer"
+	if headerParts[0] != "Bearer" {
+		return "", nil, errors.New("unauthorized: no Bearer")
 	}
 
-	token := headersParts[1]
+	token := headerParts[1]
 
-	// verify the token
+	// declare an empty Claims variable
 	claims := &Claims{}
 
-	// parse the token
+	// parse the token with our claims (we read into claims), using our secret (from the receiver)
 	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-		// validate signing method
+		// validate the signing algorithm
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New(fmt.Sprintf("invalid signing method %v", token.Header["alg"]))
+			return nil, fmt.Errorf("unexepected signing method: %v", token.Header["alg"])
 		}
-
 		return []byte(app.JWTSecret), nil
 	})
-	if err != nil {
-		if strings.HasPrefix(err.Error(), "token is expired") {
-			app.errorJSON(w, errors.New("token is expired"))
-			return "", nil, errors.New("token is expired")
-		}
 
-		app.errorJSON(w, err)
+	// check for an error; note that this catches expired tokens as well.
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "token is expired by") {
+			return "", nil, errors.New("expired token")
+		}
 		return "", nil, err
 	}
 
-	// make sure the token was issued by us
+	// make sure that we issued this token
 	if claims.Issuer != app.Domain {
-		app.errorJSON(w, errors.New("invalid token, wrong issuer"))
-		return "", nil, errors.New("invalid token, wrong issuer")
+		return "", nil, errors.New("incorrect issuer")
 	}
 
 	// valid token
 	return token, claims, nil
-
 }
 
-// generateTokenPair generates a new access and refresh token for the user
 func (app *application) generateTokenPair(user *data.User) (TokenPairs, error) {
-
-	// create a new token for the user
+	// Create the token.
 	token := jwt.New(jwt.SigningMethodHS256)
 
-	// set the claims
+	// set claims
 	claims := token.Claims.(jwt.MapClaims)
 	claims["name"] = fmt.Sprintf("%s %s", user.FirstName, user.LastName)
-	// sub must be a string even though it is an int in the db
 	claims["sub"] = fmt.Sprint(user.ID)
 	claims["aud"] = app.Domain
 	claims["iss"] = app.Domain
@@ -109,32 +95,34 @@ func (app *application) generateTokenPair(user *data.User) (TokenPairs, error) {
 	} else {
 		claims["admin"] = false
 	}
-	claims["exp"] = time.Now().Add(jwtTokenExpiry).Unix()
-	claims["iat"] = time.Now().Unix()
 
-	// generate the token
+	// set the expiry
+	claims["exp"] = time.Now().Add(jwtTokenExpiry).Unix()
+
+	// create the signed token
 	signedAccessToken, err := token.SignedString([]byte(app.JWTSecret))
 	if err != nil {
 		return TokenPairs{}, err
 	}
 
-	// create a new refresh token
+	// create the refresh token
 	refreshToken := jwt.New(jwt.SigningMethodHS256)
+	refreshTokenClaims := refreshToken.Claims.(jwt.MapClaims)
+	refreshTokenClaims["sub"] = fmt.Sprint(user.ID)
 
-	// set the claims
-	refreshClaims := refreshToken.Claims.(jwt.MapClaims)
+	// set expiry; must be longer than jwt expiry
+	refreshTokenClaims["exp"] = time.Now().Add(refreshTokenExpiry).Unix()
 
-	refreshClaims["sub"] = fmt.Sprint(user.ID)
-	refreshClaims["exp"] = time.Now().Add(refreshTokenExpiry).Unix()
-
+	// create signed refresh token
 	signedRefreshToken, err := refreshToken.SignedString([]byte(app.JWTSecret))
 	if err != nil {
 		return TokenPairs{}, err
 	}
 
-	var tokenPairs TokenPairs
-	tokenPairs.AccessToken = signedAccessToken
-	tokenPairs.RefreshToken = signedRefreshToken
+	var tokenPairs = TokenPairs{
+		Token:        signedAccessToken,
+		RefreshToken: signedRefreshToken,
+	}
 
 	return tokenPairs, nil
 }

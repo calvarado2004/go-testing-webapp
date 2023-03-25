@@ -61,11 +61,11 @@
 </div>
 
 <script>
-    // we store our access token in memory - the only safe place to store it
-    let acess_token = "";
+    // we store our access token in memory - the only safe place
+    let access_token = "";
     let refresh_token = "";
 
-    // get references to the form elements
+    // get references to UI elements
     let loginForm = document.getElementById("login-form");
     let loginBtn = document.getElementById("login");
     let userBtn = document.getElementById("getUserBtn");
@@ -75,35 +75,53 @@
     let refreshTokenDisplay = document.getElementById("refresh");
     let logoutBtn = document.getElementById("logout");
 
-    // login when the form is submitted
-    loginForm.addEventListener("click", function () {
 
+    login.addEventListener("click", function() {
         const payload = {
             email: document.getElementById("email").value,
-            password: document.getElementById("password").value
-        };
+            password: document.getElementById("password").value,
+        }
 
         const requestOptions = {
-            method: 'POST',
-            credentials: 'include',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
-        };
+            method: "POST",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        }
 
         fetch(`/web/auth`, requestOptions)
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                acess_token = data.access_token;
-                refresh_token = data.refresh_token;
-                tokenDisplay.innerText = acess_token;
-                refreshTokenDisplay.innerText = refresh_token;
-                tokensDiv.classList.remove("d-none");
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.access_token) {
+                    access_token = data.access_token;
+                    refresh_token = data.refresh_token;
+                    setUI(true);
+                }
             })
-            .catch(error => console.log(error));
+            .catch(error => {
+                alert(error);
+            })
+    })
 
-    });
-
+    function setUI(loggedIn) {
+        if (loggedIn) {
+            tokensDiv.classList.remove("d-none");
+            loginForm.classList.add("d-none");
+            logoutBtn.classList.remove("d-none");
+            tokenDisplay.innerHTML = access_token;
+            refreshTokenDisplay.innerHTML = refresh_token;
+        } else {
+            tokensDiv.classList.add("d-none");
+            loginForm.classList.remove("d-none");
+            logoutBtn.classList.add("d-none");
+            document.getElementById("password").value = "";
+            userOutput.innerHTML = "Nothing from server yet...";
+            tokenDisplay.innerHTML = "No token!";
+            refreshTokenDisplay.innerHTML = "No refresh token!";
+        }
+    }
 
 </script>
 

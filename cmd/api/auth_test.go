@@ -25,14 +25,14 @@ func Test_app_getTokenFromHeaderAndVerify(t *testing.T) {
 		setHeader     bool
 		issuer        string
 	}{
-		{"valid", fmt.Sprintf("Bearer %s", tokens.AccessToken), false, true, app.Domain},
+		{"valid", fmt.Sprintf("Bearer %s", tokens.Token), false, true, app.Domain},
 		{"valid expired", fmt.Sprintf("Bearer %s", expiredToken), true, true, app.Domain},
 		{"no header", "", true, false, app.Domain},
-		{"invalid token", fmt.Sprintf("Bearer %s1", tokens.AccessToken), true, true, app.Domain},
-		{"no bearer", fmt.Sprintf("Bear %s1", tokens.AccessToken), true, true, app.Domain},
-		{"three header parts", fmt.Sprintf("Bearer %s 1", tokens.AccessToken), true, true, app.Domain},
+		{"invalid token", fmt.Sprintf("Bearer %s1", tokens.Token), true, true, app.Domain},
+		{"no bearer", fmt.Sprintf("Bear %s1", tokens.Token), true, true, app.Domain},
+		{"three header parts", fmt.Sprintf("Bearer %s 1", tokens.Token), true, true, app.Domain},
 		// make sure the next test is the last one to run
-		{"wrong issuer", fmt.Sprintf("Bearer %s", tokens.AccessToken), true, true, "anotherdomain.com"},
+		{"wrong issuer", fmt.Sprintf("Bearer %s", tokens.Token), true, true, "anotherdomain.com"},
 	}
 
 	for _, e := range tests {

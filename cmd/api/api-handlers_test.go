@@ -13,110 +13,90 @@ import (
 	"time"
 )
 
-// Test_app_authenticate tests the authenticate handler function.
 func Test_app_authenticate(t *testing.T) {
 	var theTests = []struct {
 		name               string
 		requestBody        string
 		expectedStatusCode int
 	}{
-		{"valid", `{"email":"admin@example.com","password":"secret"}`, http.StatusOK},
-		{"invalidJSON", `This is not json`, http.StatusUnauthorized},
-		{"emptyJSON", `{}`, http.StatusUnauthorized},
-		{"emptyEmail", `{"email":"","password":"secret"}`, http.StatusUnauthorized},
-		{"emptyPassword", `{"email":"admin@example.com","password":""}`, http.StatusUnauthorized},
-		{"invalidUser", `{"email":"admin@otherdomain.com","password":"secret"}`, http.StatusUnauthorized},
+		{"valid user", `{"email":"admin@example.com","password":"secret"}`, http.StatusOK},
+		{"not json", `I'm not JSON`, http.StatusUnauthorized},
+		{"empty json", `{}`, http.StatusUnauthorized},
+		{"empty email", `{"email":""}`, http.StatusUnauthorized},
+		{"empty password", `{"email":"admin@example.com"}`, http.StatusUnauthorized},
+		{"invalid user", `{"email":"admin@someotherdomain.com","password":"secret"}`, http.StatusUnauthorized},
 	}
 
-	for _, tt := range theTests {
+	for _, e := range theTests {
 		var reader io.Reader
-		reader = strings.NewReader(tt.requestBody)
-
-		req, err := http.NewRequest("POST", "/v1/auth", reader)
-		if err != nil {
-			t.Fatal(err)
-		}
-
+		reader = strings.NewReader(e.requestBody)
+		req, _ := http.NewRequest("POST", "/auth", reader)
 		rr := httptest.NewRecorder()
-
 		handler := http.HandlerFunc(app.authenticate)
 
 		handler.ServeHTTP(rr, req)
 
-		if tt.expectedStatusCode != rr.Code {
-			t.Errorf("handler returned wrong status code: got %v want %v", rr.Code, tt.expectedStatusCode)
+		if e.expectedStatusCode != rr.Code {
+			t.Errorf("%s: returned wrong status code; expected %d but got %d", e.name, e.expectedStatusCode, rr.Code)
 		}
-
 	}
 }
 
-// Test_app_refresh tests the refresh handler function.
 func Test_app_refresh(t *testing.T) {
-
-	var theTests = []struct {
+	var tests = []struct {
 		name               string
 		token              string
 		expectedStatusCode int
-		refreshTime        bool
+		resetRefreshTime   bool
 	}{
 		{"valid", "", http.StatusOK, true},
-		{"valid but not ready", "", http.StatusTooEarly, false},
-		{"invalid", "invalid", http.StatusUnauthorized, false},
-		{"expired", expiredToken, http.StatusUnauthorized, false},
+		{"valid but not yet ready to expire", "", http.StatusTooEarly, false},
+		{"expired token", expiredToken, http.StatusBadRequest, false},
 	}
 
 	testUser := data.User{
 		ID:        1,
-		FirstName: "Test",
+		FirstName: "Admin",
 		LastName:  "User",
 		Email:     "admin@example.com",
 	}
 
 	oldRefreshTime := refreshTokenExpiry
 
-	for _, tt := range theTests {
+	for _, e := range tests {
 		var tkn string
-		if tt.token == "" {
-			if tt.refreshTime {
+		if e.token == "" {
+			if e.resetRefreshTime {
 				refreshTokenExpiry = time.Second * 1
 			}
-
 			tokens, _ := app.generateTokenPair(&testUser)
 			tkn = tokens.RefreshToken
 		} else {
-			tkn = tt.token
+			tkn = e.token
 		}
 
 		postedData := url.Values{
 			"refresh_token": {tkn},
 		}
 
-		req, err := http.NewRequest("POST", "/v1/refresh-token", strings.NewReader(postedData.Encode()))
-		if err != nil {
-			t.Fatal(err)
-		}
-
+		req, _ := http.NewRequest("POST", "/refresh-token", strings.NewReader(postedData.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
 		rr := httptest.NewRecorder()
 
 		handler := http.HandlerFunc(app.refresh)
-
 		handler.ServeHTTP(rr, req)
 
-		if tt.expectedStatusCode != rr.Code {
-			t.Errorf("handler returned wrong status code: got %v want %v, test %s", rr.Code, tt.expectedStatusCode, tt.name)
+		if rr.Code != e.expectedStatusCode {
+			t.Errorf("%s: expected status of %d but got %d", e.name, e.expectedStatusCode, rr.Code)
 		}
 
 		refreshTokenExpiry = oldRefreshTime
-
 	}
 
 }
 
-// Test_app_userHandlers tests the user handlers.
 func Test_app_userHandlers(t *testing.T) {
-	var theTests = []struct {
+	var tests = []struct {
 		name           string
 		method         string
 		json           string
@@ -126,15 +106,14 @@ func Test_app_userHandlers(t *testing.T) {
 	}{
 		{"allUsers", "GET", "", "", app.allUsers, http.StatusOK},
 		{"deleteUser", "DELETE", "", "1", app.deleteUser, http.StatusNoContent},
-		{"deleteUser bad url param", "DELETE", "", "Y", app.deleteUser, http.StatusBadRequest},
+		{"deleteUser bad URL param", "DELETE", "", "Y", app.deleteUser, http.StatusBadRequest},
 		{"getUser valid", "GET", "", "1", app.getUser, http.StatusOK},
-		{"getUser invalid", "GET", "", "999", app.getUser, http.StatusNotFound},
-		{"getUser invalid bad url param", "GET", "", "Y", app.getUser, http.StatusBadRequest},
-
+		{"getUser invalid", "GET", "", "100", app.getUser, http.StatusBadRequest},
+		{"getUser bad URL param", "GET", "", "Y", app.getUser, http.StatusBadRequest},
 		{
 			"updateUser valid",
 			"PATCH",
-			`{"id":1,"first_name":"Admin","last_name":"User","email":"admin@example.com"}`,
+			`{"id":1,"first_name":"Administrator","last_name":"User","email":"admin@example.com"}`,
 			"",
 			app.updateUser,
 			http.StatusNoContent,
@@ -142,65 +121,65 @@ func Test_app_userHandlers(t *testing.T) {
 		{
 			"updateUser invalid",
 			"PATCH",
-			`{"id":999,"first_name":"Admin","last_name":"User","email":"admin@example.com"}`,
+			`{"id":100,"first_name":"Administrator","last_name":"User","email":"admin@example.com"}`,
 			"",
 			app.updateUser,
 			http.StatusBadRequest,
 		},
 		{
-			"updateUser invalid JSON",
+			"updateUser invalid json",
 			"PATCH",
-			`{"id":1,first}`,
+			`{"id":1,first_name:"Administrator","last_name":"User","email":"admin@example.com"}`,
 			"",
 			app.updateUser,
-			http.StatusNoContent,
+			http.StatusBadRequest,
 		},
 		{
 			"insertUser valid",
-			"POST",
+			"PUT",
 			`{"first_name":"Jack","last_name":"Smith","email":"jack@example.com"}`,
 			"",
 			app.insertUser,
-			http.StatusCreated,
+			http.StatusNoContent,
 		},
 		{
 			"insertUser invalid",
-			"POST",
+			"PUT",
 			`{"foo":"bar","first_name":"Jack","last_name":"Smith","email":"jack@example.com"}`,
 			"",
 			app.insertUser,
-			http.StatusCreated,
+			http.StatusBadRequest,
 		},
 		{
-			"insertUser invalid JSON",
-			"POST",
-			`{first_name:Jack,"last_name":"Smith","email":"jack@example.com"}`,
+			"insertUser invalid json",
+			"PUT",
+			`{first_name:"Jack","last_name":"Smith","email":"jack@example.com"}`,
 			"",
 			app.insertUser,
-			http.StatusCreated,
+			http.StatusBadRequest,
 		},
 	}
 
-	for _, tt := range theTests {
+	for _, e := range tests {
 		var req *http.Request
-		if tt.json != "" {
-			req, _ = http.NewRequest(tt.method, "/v1/users", strings.NewReader(tt.json))
+		if e.json == "" {
+			req, _ = http.NewRequest(e.method, "/", nil)
 		} else {
-			req, _ = http.NewRequest(tt.method, "/v1/users", nil)
+			req, _ = http.NewRequest(e.method, "/", strings.NewReader(e.json))
 		}
-		if tt.paramID != "" {
+
+		if e.paramID != "" {
 			chiCtx := chi.NewRouteContext()
-
-			chiCtx.URLParams.Add("userID", tt.paramID)
+			chiCtx.URLParams.Add("userID", e.paramID)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
-			rr := httptest.NewRecorder()
+		}
 
-			tt.handler.ServeHTTP(rr, req)
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(e.handler)
+		handler.ServeHTTP(rr, req)
 
-			if tt.expectedStatus != rr.Code {
-				t.Errorf("handler returned wrong status code: got %v want %v, test %s", rr.Code, tt.expectedStatus, tt.name)
-			}
-
+		if rr.Code != e.expectedStatus {
+			t.Errorf("%s: wrong status returned; expected %d but got %d", e.name, e.expectedStatus, rr.Code)
 		}
 	}
 }

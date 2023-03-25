@@ -1,61 +1,42 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-
-	"net/http"
 )
 
-func (app *application) routesAPI() http.Handler {
+func (app *application) routes() http.Handler {
 	mux := chi.NewRouter()
 
 	// register middleware
 	mux.Use(middleware.Recoverer)
-
 	mux.Use(app.enableCORS)
 
-	// serving single page application
 	mux.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("./html/"))))
 
-	mux.Route("/web", func(muxWeb chi.Router) {
-		muxWeb.Post("/auth", app.authenticate)
+	mux.Route("/web", func(mux chi.Router) {
+		mux.Post("/auth", app.authenticate)
 		// /refresh-token
 		// /logout
-
 	})
 
-	// authentication routes - auth handler, refresh token handler
-	mux.Post("/v1/auth", app.authenticate)
-	mux.Post("/v1/refresh-token", app.refresh)
-
-	// test handler - unprotected route for JSON response
-	mux.Get("/v1/test", func(w http.ResponseWriter, r *http.Request) {
-		var payload = struct {
-			Message string `json:"message"`
-		}{
-			Message: "Hello World!",
-		}
-
-		err := app.writeJSON(w, http.StatusOK, payload, "response")
-		if err != nil {
-			app.errorJSON(w, err)
-		}
-
-	})
+	// authentication routes - auth handler, refresh
+	mux.Post("/auth", app.authenticate)
+	mux.Post("/refresh-token", app.refresh)
 
 	// protected routes
-	mux.Route("/v1/users", func(muxAuth chi.Router) {
+	mux.Route("/users", func(mux chi.Router) {
+		mux.Use(app.authRequired)
 
-		muxAuth.Use(app.authRequired)
-
-		muxAuth.Get("/", app.allUsers)
-		muxAuth.Get("/{id}", app.getUser)
-		muxAuth.Patch("/{id}", app.updateUser)
-		muxAuth.Delete("/{id}", app.deleteUser)
-		muxAuth.Post("/", app.insertUser)
-
+		mux.Get("/", app.allUsers)
+		mux.Get("/{userID}", app.getUser)
+		mux.Delete("/{userID}", app.deleteUser)
+		mux.Put("/", app.insertUser)
+		mux.Patch("/", app.updateUser)
 	})
+
 
 	return mux
 }

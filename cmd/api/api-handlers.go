@@ -3,65 +3,66 @@ package main
 import (
 	"errors"
 	"github.com/calvarado2004/go-testing-webapp/pkg/data"
-	"github.com/go-chi/chi/v5"
-	"github.com/golang-jwt/jwt/v4"
-	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt/v4"
+	"golang.org/x/crypto/bcrypt"
 )
 
+// Credentials is the type used to unmarshal a JSON payload
+// during authentication.
 type Credentials struct {
 	Username string `json:"email"`
 	Password string `json:"password"`
 }
 
-// authenticate handles the authentication process for existing users.
+// authenticate is the handler used to try to authenticate a user, and
+// send them a JWT token if successful.
 func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
 	var creds Credentials
 
 	// read a json payload
 	err := app.readJSON(w, r, &creds)
 	if err != nil {
-		app.errorJSON(w, errors.New("unable to parse json"), http.StatusUnauthorized)
+		app.errorJSON(w, errors.New("unauthorized"), http.StatusUnauthorized)
 		return
 	}
 
 	// look up the user by email address
 	user, err := app.DB.GetUserByEmail(creds.Username)
 	if err != nil {
-		app.errorJSON(w, errors.New("invalid credentials"), http.StatusUnauthorized)
+		app.errorJSON(w, errors.New("unauthorized"), http.StatusUnauthorized)
 		return
 	}
 
-	// check the password matches
+	// check password
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(creds.Password))
 	if err != nil {
-		app.errorJSON(w, errors.New("invalid credentials"), http.StatusUnauthorized)
+		app.errorJSON(w, errors.New("unauthorized"), http.StatusUnauthorized)
 		return
 	}
 
-	// create a new token for the user
+	// generate tokens
 	tokenPairs, err := app.generateTokenPair(user)
 	if err != nil {
-		app.errorJSON(w, errors.New("unable to generate token"), http.StatusInternalServerError)
+		app.errorJSON(w, errors.New("unauthorized"), http.StatusUnauthorized)
 		return
 	}
 
-	// write the token to the response
-	err = app.writeJSON(w, http.StatusOK, tokenPairs, "token")
-	if err != nil {
-		app.errorJSON(w, errors.New("unable to write json"), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-
+	// send token to user
+	_ = app.writeJSON(w, http.StatusOK, tokenPairs)
 }
 
-// refresh handles the refresh process for existing users.
+// refresh is the handler called to request a new token pair, when
+// the jwt token has expired. We expect the refresh token to come
+// from a POST request. We validate it, look up the user in the db,
+// and if everything is good we send back a new token pair
+// as JSON. We also set an http only, secure cookie with the refresh
+// token stored inside.
 func (app *application) refresh(w http.ResponseWriter, r *http.Request) {
-
 	err := r.ParseForm()
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -69,8 +70,6 @@ func (app *application) refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	refreshToken := r.Form.Get("refresh_token")
-
-	// look up the user by refresh token using claims
 	claims := &Claims{}
 
 	_, err = jwt.ParseWithClaims(refreshToken, claims, func(token *jwt.Token) (interface{}, error) {
@@ -78,74 +77,62 @@ func (app *application) refresh(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		app.errorJSON(w, err, http.StatusUnauthorized)
+		app.errorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
 	if time.Unix(claims.ExpiresAt.Unix(), 0).Sub(time.Now()) > 30*time.Second {
-		app.errorJSON(w, errors.New("token is not expired yet"), http.StatusTooEarly)
+		app.errorJSON(w, errors.New("refresh token does not need renewed yet"), http.StatusTooEarly)
 		return
 	}
 
 	// get the user id from the claims
-	userID, _ := strconv.Atoi(claims.Subject)
+	userID, err := strconv.Atoi(claims.Subject)
+	if err != nil {
+		app.errorJSON(w, err, http.StatusBadRequest)
+		return
+	}
 
 	user, err := app.DB.GetUser(userID)
 	if err != nil {
-		app.errorJSON(w, errors.New("unknown user on db"), http.StatusNotFound)
+		app.errorJSON(w, errors.New("unknown user"), http.StatusBadRequest)
 		return
 	}
 
-	// create a new token for the user
 	tokenPairs, err := app.generateTokenPair(user)
 	if err != nil {
-		app.errorJSON(w, errors.New("unable to generate token"), http.StatusInternalServerError)
+		app.errorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
-	// set a cookie for the refresh token
 	http.SetCookie(w, &http.Cookie{
 		Name:     "__Host-refresh_token",
 		Path:     "/",
 		Value:    tokenPairs.RefreshToken,
 		Expires:  time.Now().Add(refreshTokenExpiry),
 		MaxAge:   int(refreshTokenExpiry.Seconds()),
-		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
 		Domain:   "localhost",
 		HttpOnly: true,
+		Secure:   true,
 	})
 
-	// write the token to the response
-	err = app.writeJSON(w, http.StatusOK, tokenPairs, "token")
-	if err != nil {
-		app.errorJSON(w, errors.New("unable to write json"), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
+	_ = app.writeJSON(w, http.StatusOK, tokenPairs)
 }
 
-// allUsers handles the GET /v1/users request.
+// allUsers returns a list of all users as JSON
 func (app *application) allUsers(w http.ResponseWriter, r *http.Request) {
-
 	users, err := app.DB.AllUsers()
 	if err != nil {
 		app.errorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, users, "users")
-	if err != nil {
-		app.errorJSON(w, err, http.StatusInternalServerError)
-		return
-	}
-
+	_ = app.writeJSON(w, http.StatusOK, users)
 }
 
-// getUser handles the GET /v1/users/{id} request.
+// getUser returns one user as JSON
 func (app *application) getUser(w http.ResponseWriter, r *http.Request) {
-
 	userID, err := strconv.Atoi(chi.URLParam(r, "userID"))
 	if err != nil {
 		app.errorJSON(w, err, http.StatusBadRequest)
@@ -154,23 +141,16 @@ func (app *application) getUser(w http.ResponseWriter, r *http.Request) {
 
 	user, err := app.DB.GetUser(userID)
 	if err != nil {
-		app.errorJSON(w, err, http.StatusNotFound)
+		app.errorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, user, "user")
-	if err != nil {
-		app.errorJSON(w, err, http.StatusInternalServerError)
-		return
-	}
-
+	_ = app.writeJSON(w, http.StatusOK, user)
 }
 
-// updateUser handles the PUT /v1/users/{id} request.
+// updateUser updates a user from a JSON payload, and returns just a header
 func (app *application) updateUser(w http.ResponseWriter, r *http.Request) {
-
 	var user data.User
-
 	err := app.readJSON(w, r, &user)
 	if err != nil {
 		app.errorJSON(w, err, http.StatusBadRequest)
@@ -179,17 +159,15 @@ func (app *application) updateUser(w http.ResponseWriter, r *http.Request) {
 
 	err = app.DB.UpdateUser(user)
 	if err != nil {
-		app.errorJSON(w, err, http.StatusInternalServerError)
+		app.errorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-
 }
 
-// deleteUser handles the DELETE /v1/users/{id} request.
+// deleteUser deletes one user based on ID in URL, and returns a header
 func (app *application) deleteUser(w http.ResponseWriter, r *http.Request) {
-
 	userID, err := strconv.Atoi(chi.URLParam(r, "userID"))
 	if err != nil {
 		app.errorJSON(w, err, http.StatusBadRequest)
@@ -198,36 +176,27 @@ func (app *application) deleteUser(w http.ResponseWriter, r *http.Request) {
 
 	err = app.DB.DeleteUser(userID)
 	if err != nil {
-		app.errorJSON(w, err, http.StatusInternalServerError)
+		app.errorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// insertUser handles the POST /v1/users request.
+// insertUser inserts a user using a JSON payload, and returns a header
 func (app *application) insertUser(w http.ResponseWriter, r *http.Request) {
-
 	var user data.User
-
 	err := app.readJSON(w, r, &user)
 	if err != nil {
 		app.errorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
-	id, err := app.DB.InsertUser(user)
+	_, err = app.DB.InsertUser(user)
 	if err != nil {
-		app.errorJSON(w, err, http.StatusInternalServerError)
+		app.errorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
-	user.ID = id
-
-	err = app.writeJSON(w, http.StatusCreated, user, "user")
-	if err != nil {
-		app.errorJSON(w, err, http.StatusInternalServerError)
-		return
-	}
-
+	w.WriteHeader(http.StatusNoContent)
 }
