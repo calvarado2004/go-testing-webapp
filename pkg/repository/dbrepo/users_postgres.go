@@ -73,6 +73,7 @@ func (m *PostgresDBRepo) GetUser(id int) (*data.User, error) {
 		    u.id = $1`
 
 	var user data.User
+
 	row := m.DB.QueryRowContext(ctx, query, id)
 
 	err := row.Scan(
