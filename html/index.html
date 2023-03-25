@@ -81,6 +81,31 @@
         refreshTokens();
     })
 
+    let refreshRunning = false;
+
+    let refreshTime = new Date();
+
+    let secondsRemaining = (600 - refreshTime.getSeconds()) * 1000;
+
+    //let secondsRemaining = (5 - refreshTime.getSeconds()) * 1000;
+
+    // autoRefresh is called when the page loads
+    function autoRefresh() {
+        if (!refreshRunning) {
+            setTimeout(function() {
+                if (access_token !== "") {
+                    setInterval(refreshTokens, 10 * 60 * 1000)
+                    //setInterval(refreshTokens, 5  * 1000)
+                }
+
+            }, secondsRemaining);
+
+        }
+        refreshRunning = true;
+
+    }
+
+
     loginBtn.addEventListener("click", function() {
         const payload = {
             email: document.getElementById("email").value,
@@ -103,12 +128,35 @@
                     access_token = data.access_token;
                     refresh_token = data.refresh_token;
                     setUI(true);
+                    autoRefresh();
                 }
             })
             .catch(error => {
                 alert(error);
             })
         console.log("login clicked, cookie", document.cookie);
+    })
+
+    userBtn.addEventListener("click", function (){
+        const myHeaders = new Headers();
+        myHeaders.append("Content-Type", "application/json");
+        myHeaders.append("Authorization", `Bearer ${access_token}`);
+        const requestOptions = {
+            method: "GET",
+            headers: myHeaders,
+        }
+
+        fetch("/users/1", requestOptions)
+            .then((response) => response.json())
+            .then((data) => {
+                if (data) {
+                    userOutput.innerHTML = JSON.stringify(data, undefined, 4);
+
+                }
+            })
+            .catch(error => {
+                userOutput.innerHTML = "log in first";
+            })
     })
 
     // refreshTokens is called when the page loads
@@ -126,6 +174,7 @@
                     access_token = data.access_token;
                     refresh_token = data.refresh_token;
                     setUI(true);
+                    autoRefresh();
                 } else {
                     setUI(false);
                 }
