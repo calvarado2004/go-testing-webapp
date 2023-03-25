@@ -19,9 +19,7 @@ func (app *application) routes() http.Handler {
 	mux.Route("/web", func(mux chi.Router) {
 		mux.Post("/auth", app.authenticate)
 		mux.Get("/refresh-token", app.refreshUsingCookie)
-		mux.Post("/refresh-token", app.refreshUsingCookie)
-		// /refresh-token
-		// /logout
+		mux.Get("/logout", app.deleteRefreshCookie)
 	})
 
 	// authentication routes - auth handler, refresh
