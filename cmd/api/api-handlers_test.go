@@ -183,3 +183,69 @@ func Test_app_userHandlers(t *testing.T) {
 		}
 	}
 }
+
+// Test_app_refreshUsingCookie tests the refreshUsingCookie() method.
+func Test_app_refreshUsingCookie(t *testing.T) {
+
+	testUser := data.User{
+		ID:        1,
+		FirstName: "Admin",
+		LastName:  "User",
+		Email:     "admin@example.com",
+	}
+
+	tokens, _ := app.generateTokenPair(&testUser)
+
+	// Create a cookie with the refresh token.
+	testCookie := &http.Cookie{
+		Name:     "refresh_token",
+		Path:     "/",
+		Value:    tokens.RefreshToken,
+		Expires:  time.Now().Add(refreshTokenExpiry),
+		MaxAge:   int(refreshTokenExpiry.Seconds()),
+		SameSite: http.SameSiteStrictMode,
+		Domain:   "localhost",
+		HttpOnly: true,
+		Secure:   true,
+	}
+
+	badCookie := &http.Cookie{
+		Name:     "refresh_token",
+		Path:     "/",
+		Value:    "some bad string",
+		Expires:  time.Now().Add(refreshTokenExpiry),
+		MaxAge:   int(refreshTokenExpiry.Seconds()),
+		SameSite: http.SameSiteStrictMode,
+		Domain:   "localhost",
+		HttpOnly: true,
+		Secure:   true,
+	}
+
+	theTests := []struct {
+		name               string
+		addCookie          bool
+		cookie             *http.Cookie
+		expectedStatusCode int
+	}{
+		{"valid cookie", true, testCookie, http.StatusOK},
+		{"invalid cookie", true, badCookie, http.StatusBadRequest},
+	}
+
+	for _, tt := range theTests {
+
+		req, _ := http.NewRequest("GET", "/refresh-token", nil)
+		if tt.addCookie {
+			req.AddCookie(tt.cookie)
+		}
+		rr := httptest.NewRecorder()
+
+		handler := http.HandlerFunc(app.refreshUsingCookie)
+		handler.ServeHTTP(rr, req)
+
+		if rr.Code != tt.expectedStatusCode {
+			t.Errorf("%s: expected status of %d but got %d", tt.name, tt.expectedStatusCode, rr.Code)
+
+		}
+
+	}
+}

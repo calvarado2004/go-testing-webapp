@@ -2,18 +2,18 @@ package main
 
 import (
 	"fmt"
+	"github.com/calvarado2004/go-testing-webapp/pkg/data"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"webapp/pkg/data"
 )
 
 func Test_app_enableCORS(t *testing.T) {
-	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){})
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 
-	var tests = []struct{
-		name string
-		method string
+	var tests = []struct {
+		name         string
+		method       string
 		expectHeader bool
 	}{
 		{"preflight", "OPTIONS", true},
@@ -39,22 +39,22 @@ func Test_app_enableCORS(t *testing.T) {
 }
 
 func Test_app_authRequired(t *testing.T) {
-	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){})
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 
 	testUser := data.User{
-		ID: 1,
+		ID:        1,
 		FirstName: "Admin",
-		LastName: "User",
-		Email: "admin@example.com",
+		LastName:  "User",
+		Email:     "admin@example.com",
 	}
 
 	tokens, _ := app.generateTokenPair(&testUser)
 
-	var tests = []struct{
-		name string
-		token string
+	var tests = []struct {
+		name             string
+		token            string
 		expectAuthorized bool
-		setHeader bool
+		setHeader        bool
 	}{
 		{name: "valid token", token: fmt.Sprintf("Bearer %s", tokens.Token), expectAuthorized: true, setHeader: true},
 		{name: "no token", token: "", expectAuthorized: false, setHeader: false},

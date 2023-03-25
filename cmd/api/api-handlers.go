@@ -149,11 +149,6 @@ func (app *application) refreshUsingCookie(w http.ResponseWriter, r *http.Reques
 				return
 			}
 
-			if time.Unix(claims.ExpiresAt.Unix(), 0).Sub(time.Now()) > 30*time.Second {
-				app.errorJSON(w, errors.New("refresh token does not need renewed yet"), http.StatusTooEarly)
-				return
-			}
-
 			// get the user id from the claims
 			userID, err := strconv.Atoi(claims.Subject)
 			if err != nil {

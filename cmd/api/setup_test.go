@@ -1,9 +1,9 @@
 package main
 
 import (
+	"github.com/calvarado2004/go-testing-webapp/pkg/repository/dbrepo"
 	"os"
 	"testing"
-	"webapp/pkg/repository/dbrepo"
 )
 
 var app application
