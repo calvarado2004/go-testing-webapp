@@ -15,6 +15,16 @@ func (app *application) routesAPI() http.Handler {
 
 	mux.Use(app.enableCORS)
 
+	// serving single page application
+	mux.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("./html/"))))
+
+	mux.Route("/web", func(muxWeb chi.Router) {
+		muxWeb.Post("/auth", app.authenticate)
+		// /refresh-token
+		// /logout
+
+	})
+
 	// authentication routes - auth handler, refresh token handler
 	mux.Post("/v1/auth", app.authenticate)
 	mux.Post("/v1/refresh-token", app.refresh)

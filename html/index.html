@@ -61,6 +61,49 @@
 </div>
 
 <script>
+    // we store our access token in memory - the only safe place to store it
+    let acess_token = "";
+    let refresh_token = "";
+
+    // get references to the form elements
+    let loginForm = document.getElementById("login-form");
+    let loginBtn = document.getElementById("login");
+    let userBtn = document.getElementById("getUserBtn");
+    let userOutput = document.getElementById("user-output");
+    let tokensDiv = document.getElementById("tokens");
+    let tokenDisplay = document.getElementById("token");
+    let refreshTokenDisplay = document.getElementById("refresh");
+    let logoutBtn = document.getElementById("logout");
+
+    // login when the form is submitted
+    loginForm.addEventListener("click", function () {
+
+        const payload = {
+            email: document.getElementById("email").value,
+            password: document.getElementById("password").value
+        };
+
+        const requestOptions = {
+            method: 'POST',
+            credentials: 'include',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        };
+
+        fetch(`/web/auth`, requestOptions)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                acess_token = data.access_token;
+                refresh_token = data.refresh_token;
+                tokenDisplay.innerText = acess_token;
+                refreshTokenDisplay.innerText = refresh_token;
+                tokensDiv.classList.remove("d-none");
+            })
+            .catch(error => console.log(error));
+
+    });
+
 
 </script>
 
