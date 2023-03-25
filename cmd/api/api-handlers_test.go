@@ -229,6 +229,7 @@ func Test_app_refreshUsingCookie(t *testing.T) {
 	}{
 		{"valid cookie", true, testCookie, http.StatusOK},
 		{"invalid cookie", true, badCookie, http.StatusBadRequest},
+		{"no cookie", false, nil, http.StatusBadRequest},
 	}
 
 	for _, tt := range theTests {
@@ -248,4 +249,34 @@ func Test_app_refreshUsingCookie(t *testing.T) {
 		}
 
 	}
+}
+
+// Test_app_deleteRefreshCookie tests the deleteRefreshCookie() method.
+func Test_app_deleteRefreshCookie(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/logout", nil)
+	rr := httptest.NewRecorder()
+
+	handler := http.HandlerFunc(app.deleteRefreshCookie)
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusAccepted {
+		t.Errorf("wrong status returned; expected %d but got %d", http.StatusNoContent, rr.Code)
+	}
+
+	// Check that the cookie has been deleted.
+	foundCookie := false
+	for _, c := range rr.Result().Cookies() {
+		if c.Name == "refresh_token" {
+			foundCookie = true
+			if c.Expires.After(time.Now()) {
+				t.Errorf("cookie expiration in future and it should not be")
+			}
+		}
+	}
+
+	if !foundCookie {
+		t.Errorf("cookie not found")
+	}
+
 }
