@@ -76,7 +76,12 @@
     let logoutBtn = document.getElementById("logout");
 
 
-    login.addEventListener("click", function() {
+    document.addEventListener("DOMContentLoaded", function() {
+        // check if we have a refresh token
+        refreshTokens();
+    })
+
+    loginBtn.addEventListener("click", function() {
         const payload = {
             email: document.getElementById("email").value,
             password: document.getElementById("password").value,
@@ -103,7 +108,32 @@
             .catch(error => {
                 alert(error);
             })
+        console.log("login clicked, cookie", document.cookie);
     })
+
+    // refreshTokens is called when the page loads
+    function refreshTokens() {
+        // send a get request which includes the __Host-refresh-token cookie
+        const requestOptions = {
+            method: "GET",
+            credentials: "include",
+        }
+
+        fetch(`/web/refresh-token`, requestOptions)
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.access_token) {
+                    access_token = data.access_token;
+                    refresh_token = data.refresh_token;
+                    setUI(true);
+                } else {
+                    setUI(false);
+                }
+            })
+            .catch(error => {
+                console.log("user is not logged in - no refresh token");
+            })
+    }
 
     function setUI(loggedIn) {
         if (loggedIn) {

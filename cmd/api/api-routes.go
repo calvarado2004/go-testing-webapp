@@ -18,6 +18,9 @@ func (app *application) routes() http.Handler {
 
 	mux.Route("/web", func(mux chi.Router) {
 		mux.Post("/auth", app.authenticate)
+		mux.Post("/refresh-token", app.refresh)
+		mux.Get("/refresh-token", app.refresh)
+
 		// /refresh-token
 		// /logout
 	})
@@ -36,7 +39,6 @@ func (app *application) routes() http.Handler {
 		mux.Put("/", app.insertUser)
 		mux.Patch("/", app.updateUser)
 	})
-
 
 	return mux
 }
